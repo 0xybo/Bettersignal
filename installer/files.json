@@ -1,0 +1,14 @@
+{
+    "appdata": [
+        "installer/appdata/plugins",
+        "installer/appdata/themes",
+        "installer/appdata/settings.json"
+    ],
+    "app": [
+        "index.js",
+        "index.d.ts",
+        "manifest.css",
+        "messages.json",
+        "BsApi.js"
+    ]
+}

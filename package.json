@@ -1,0 +1,28 @@
+{
+	"name": "bettersignal",
+	"version": "1.0.0",
+	"description": "Plugins and themes for Signal desktop app.",
+	"main": "index.js",
+	"dependencies": {},
+	"devDependencies": {
+		"asar": "^3.0.3",
+		"child_process": "^1.0.2",
+		"fs-extra": "^10.0.0",
+		"path": "^0.12.7"
+	},
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+    "install": "node installer/install",
+    "update": "node installer/update"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Oxybo45/Bettersignal.git"
+	},
+	"author": "Albatros#0216",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/Oxybo45/Bettersignal/issues"
+	},
+	"homepage": "https://github.com/Oxybo45/Bettersignal#readme"
+}
