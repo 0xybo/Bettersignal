@@ -85,5 +85,35 @@ module.exports = function (/** @type {Bettersignal} */Bs, { E }) {
 				});
 			},
 		},
+		wait: {
+			element: function(selector, callback) {
+				return Bs.wait.element(selector, callback);
+			},
+			elementOnce: function(selector) {
+				return Bs.wait.elementOnce(selector)
+			}
+		},
+		popup: {
+			new: function (message, {size, actions, type}) {
+				return Bs.popup.new(message, { size, actions, type})
+			},
+			progress: function(message) {
+				return Bs.popup.progress(message)
+			},
+			confirm: function({ message, resolve = () => {}, okText, confirmStyle, cancelText, reject }) {
+				return Bs.popup.confirm({ message, resolve, okText, confirmStyle, cancelText, reject })
+			}
+		},
+		conversation: {
+			get: function(id) {
+				return Bs.conversation.get(id)
+			},
+			getAll: function() {
+				return Bs.conversation.getAll()
+			},
+			current: function() {
+				return Bs.conversation.current()
+			}
+		}
 	};
 };
