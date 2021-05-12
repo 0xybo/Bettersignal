@@ -40,8 +40,7 @@ var classList = {
 };
 
 class Bettersignal {
-	constructor() {
-	}
+	constructor() {}
 	copyImage(src) {
 		let isURL = src.isURL();
 		if (isURL ? (isURL.protocol === "http:" || isURL.protocol === "https:" ? true : false) : false) {
@@ -113,7 +112,7 @@ class Bettersignal {
 			return normalized;
 		},
 	};
-	message = {
+	messages = {
 		async getFromElement(elem) {
 			var parent = elem.closest(Bs.signal.selectorList.messageContainer);
 			return await Bs.message.getById(parent.id);
@@ -121,6 +120,47 @@ class Bettersignal {
 		async getById(id) {
 			return await Signal.Data.getMessageById(id);
 		},
+		send: function () {
+			let target = document.querySelector(".module-composition-area__input .ql-editor.ql-editor--loaded");
+			if (!target) return false;
+			let event = new KeyboardEvent("keydown", {
+				key: "Enter",
+				which: 13,
+				keyCode: 13,
+				metaKey: false,
+				ctrlKey: false,
+				shiftKey: false,
+				altKey: false,
+				target: target,
+				srcElement: target,
+			});
+			target.click()
+			let success = target.dispatchEvent(event);
+			if(success) return true;
+			else return false;
+		}.bind(this),
+	};
+	conversation = {
+		getAll: async function () {
+			return await window.getConversations();
+		}.bind(this),
+		get: async function (id) {
+			var conversations = await this.conversation.getAll();
+			var conversation = conversations.get(id);
+			if (!conversation) return false;
+			return conversation;
+		}.bind(this),
+		current: async function () {
+			let conversationElement = document.querySelector("[id*=conversation-].conversation");
+			if (!conversationElement) return false;
+			var conversation = await this.conversation.get(conversationElement.id.match(/(?<=conversation\-).*$/gim)[0]);
+			if (!conversation) return false;
+			var view = new window.Whisper.ConversationView({
+				model: conversation,
+			});
+			view.attachmentListView.el = document.querySelector(".module-composition-area__attachment-list");
+			return view;
+		}.bind(this),
 	};
 	components = {
 		spinner({ moduleClassName, size, svgSize, direction }) {
@@ -165,13 +205,11 @@ class Bettersignal {
 				"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2 2 20 20' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='M0 0h24v24H0z' fill='none'%3E%3C/path%3E%3Cpath d='M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95c-.32-1.25-.78-2.45-1.38-3.56 1.84.63 3.37 1.91 4.33 3.56zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56-1.84-.63-3.37-1.9-4.33-3.56zm2.95-8H5.08c.96-1.66 2.49-2.93 4.33-3.56C8.81 5.55 8.35 6.75 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95c-.96 1.65-2.49 2.93-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z'%3E%3C/path%3E%3C/svg%3E",
 			discord:
 				"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32' style='&%2310; fill: white;&%2310;'%3E%3Cpath d='M26.964 0c1.875 0 3.385 1.516 3.474 3.302v28.698l-3.568-3.031-1.958-1.781-2.141-1.865 0.891 2.938h-18.714c-1.87 0-3.385-1.417-3.385-3.302v-21.651c0-1.786 1.516-3.302 3.391-3.302h22zM18.807 7.578h-0.042l-0.271 0.266c2.766 0.802 4.104 2.052 4.104 2.052-1.781-0.891-3.391-1.339-4.995-1.521-1.156-0.177-2.318-0.083-3.297 0h-0.271c-0.625 0-1.958 0.271-3.745 0.984-0.62 0.271-0.979 0.448-0.979 0.448s1.333-1.339 4.281-2.052l-0.182-0.177c0 0-2.229-0.089-4.635 1.693 0 0-2.406 4.193-2.406 9.359 0 0 1.333 2.318 4.99 2.406 0 0 0.536-0.708 1.073-1.333-2.052-0.625-2.854-1.875-2.854-1.875s0.182 0.089 0.448 0.266h0.078c0.042 0 0.063 0.021 0.083 0.042v0.010c0.021 0.021 0.042 0.036 0.078 0.036 0.443 0.182 0.88 0.359 1.24 0.536 0.625 0.266 1.422 0.536 2.401 0.714 1.24 0.182 2.661 0.266 4.281 0 0.797-0.182 1.599-0.354 2.401-0.714 0.516-0.266 1.156-0.531 1.859-0.984 0 0-0.797 1.25-2.938 1.875 0.438 0.62 1.057 1.333 1.057 1.333 3.661-0.083 5.083-2.401 5.161-2.302 0-5.161-2.422-9.359-2.422-9.359-2.177-1.62-4.219-1.682-4.578-1.682l0.073-0.026zM19.031 13.464c0.938 0 1.693 0.797 1.693 1.776 0 0.99-0.76 1.786-1.693 1.786-0.938 0-1.693-0.797-1.693-1.776 0-0.99 0.76-1.786 1.693-1.786zM12.974 13.464c0.932 0 1.688 0.797 1.688 1.776 0 0.99-0.76 1.786-1.693 1.786-0.938 0-1.698-0.797-1.698-1.776 0-0.99 0.76-1.786 1.698-1.786z'/%3E%3C/svg%3E",
-			github:
-				"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='m12 .5c-6.63 0-12 5.28-12 11.792 0 5.211 3.438 9.63 8.205 11.188.6.111.82-.254.82-.567 0-.28-.01-1.022-.015-2.005-3.338.711-4.042-1.582-4.042-1.582-.546-1.361-1.335-1.725-1.335-1.725-1.087-.731.084-.716.084-.716 1.205.082 1.838 1.215 1.838 1.215 1.07 1.803 2.809 1.282 3.495.981.108-.763.417-1.282.76-1.577-2.665-.295-5.466-1.309-5.466-5.827 0-1.287.465-2.339 1.235-3.164-.135-.298-.54-1.497.105-3.121 0 0 1.005-.316 3.3 1.209.96-.262 1.98-.392 3-.398 1.02.006 2.04.136 3 .398 2.28-1.525 3.285-1.209 3.285-1.209.645 1.624.24 2.823.12 3.121.765.825 1.23 1.877 1.23 3.164 0 4.53-2.805 5.527-5.475 5.817.42.354.81 1.077.81 2.182 0 1.578-.015 2.846-.015 3.229 0 .309.21.678.825.56 4.801-1.548 8.236-5.97 8.236-11.173 0-6.512-5.373-11.792-12-11.792z'%3E%3C/path%3E%3C/svg%3E",
+			github: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='m12 .5c-6.63 0-12 5.28-12 11.792 0 5.211 3.438 9.63 8.205 11.188.6.111.82-.254.82-.567 0-.28-.01-1.022-.015-2.005-3.338.711-4.042-1.582-4.042-1.582-.546-1.361-1.335-1.725-1.335-1.725-1.087-.731.084-.716.084-.716 1.205.082 1.838 1.215 1.838 1.215 1.07 1.803 2.809 1.282 3.495.981.108-.763.417-1.282.76-1.577-2.665-.295-5.466-1.309-5.466-5.827 0-1.287.465-2.339 1.235-3.164-.135-.298-.54-1.497.105-3.121 0 0 1.005-.316 3.3 1.209.96-.262 1.98-.392 3-.398 1.02.006 2.04.136 3 .398 2.28-1.525 3.285-1.209 3.285-1.209.645 1.624.24 2.823.12 3.121.765.825 1.23 1.877 1.23 3.164 0 4.53-2.805 5.527-5.475 5.817.42.354.81 1.077.81 2.182 0 1.578-.015 2.846-.015 3.229 0 .309.21.678.825.56 4.801-1.548 8.236-5.97 8.236-11.173 0-6.512-5.373-11.792-12-11.792z'%3E%3C/path%3E%3C/svg%3E",
 			patreon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='m0 .5h4.219v23h-4.219z'%3E%3C/path%3E%3Cpath d='m15.384.5c-4.767 0-8.644 3.873-8.644 8.633 0 4.75 3.877 8.61 8.644 8.61 4.754 0 8.616-3.865 8.616-8.61 0-4.759-3.863-8.633-8.616-8.633z'%3E%3C/path%3E%3C/svg%3E",
 			support:
 				"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2 2 20 20' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='M0 0h24v24H0z' fill='none'%3E%3C/path%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z'%3E%3C/path%3E%3C/svg%3E",
-			donate:
-				"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2 2 20 20' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='M0 0h24v24H0z' fill='none'%3E%3C/path%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z'%3E%3C/path%3E%3C/svg%3E",
+			donate: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2 2 20 20' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='M0 0h24v24H0z' fill='none'%3E%3C/path%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z'%3E%3C/path%3E%3C/svg%3E",
 		},
 	};
 	signal = {
@@ -314,7 +352,7 @@ class Bettersignal {
 		},
 	};
 	translate = {
-		get: (function (key, substitutions = {}, messages, locale) {
+		get: function (key, substitutions = {}, messages, locale) {
 			if (!messages) var messages = this.translate.messages;
 			if (!locale) var locale = Bs.settings.props.language ? Bs.settings.props.language : "en";
 			if (!messages[key]) return "";
@@ -325,8 +363,8 @@ class Bettersignal {
 				text = text.replaceAll(`{{${key}}}`, value);
 			});
 			return text;
-		}).bind(this),
-		messages: require(translatePath)
+		}.bind(this),
+		messages: require(translatePath),
 	};
 }
 class Plugins extends Bettersignal {
@@ -349,7 +387,6 @@ class Plugins extends Bettersignal {
 		try {
 			var plugin = new (require(pluginPath))();
 			if (pluginName == plugin.name) {
-				plugin.load.call(plugin);
 				plugin.path = pluginPath;
 				this.toast.new(
 					this.translate.get("pluginLoadedToast", {
@@ -756,7 +793,7 @@ class Settings extends Bettersignal {
 										class: "settingsRightPanelButton BsButton1",
 									},
 									events: {
-										click: this.windows.openFolder.bind(this, pluginsFolder),
+										click: this.storage.open.bind(this, pluginsFolder),
 									},
 									children: [this.translate.get("openPluginsFolder")],
 								}),
@@ -789,8 +826,7 @@ class Settings extends Bettersignal {
 								}),
 								E("img").set({
 									props: {
-										src:
-											"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' class='' fill='%23FFFFFF' viewBox='0 0 24 24' style='width: 16px; height: 16px;'%3E%3Cpath fill='none' d='M0 0h24v24H0V0z'%3E%3C/path%3E%3Cpath d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'%3E%3C/path%3E%3C/svg%3E",
+										src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' class='' fill='%23FFFFFF' viewBox='0 0 24 24' style='width: 16px; height: 16px;'%3E%3Cpath fill='none' d='M0 0h24v24H0V0z'%3E%3C/path%3E%3Cpath d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'%3E%3C/path%3E%3C/svg%3E",
 									},
 								}),
 							],
@@ -826,7 +862,7 @@ class Settings extends Bettersignal {
 										class: "settingsRightPanelButton BsButton1",
 									},
 									events: {
-										click: this.windows.openFolder.bind(this, themesFolder),
+										click: this.storage.open.bind(this, themesFolder),
 									},
 									children: [this.translate.get("openThemesFolder")],
 								}),
@@ -859,8 +895,7 @@ class Settings extends Bettersignal {
 								}),
 								E("img").set({
 									props: {
-										src:
-											"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' class='' fill='%23FFFFFF' viewBox='0 0 24 24' style='width: 16px; height: 16px;'%3E%3Cpath fill='none' d='M0 0h24v24H0V0z'%3E%3C/path%3E%3Cpath d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'%3E%3C/path%3E%3C/svg%3E",
+										src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' class='' fill='%23FFFFFF' viewBox='0 0 24 24' style='width: 16px; height: 16px;'%3E%3Cpath fill='none' d='M0 0h24v24H0V0z'%3E%3C/path%3E%3Cpath d='M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'%3E%3C/path%3E%3C/svg%3E",
 									},
 								}),
 							],
@@ -1043,8 +1078,7 @@ class Settings extends Bettersignal {
 											children: [
 												E("img").set({
 													props: {
-														src:
-															"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' version='1.1' id='Capa_1' x='0px' y='0px' width='507.451px' height='507.45px' viewBox='0 0 507.451 507.45' style='enable-background:new 0 0 507.451 507.45;fill: white;' xml:space='preserve'%3E%3Cg%3E%3Cg id='settings'%3E%3Cpath d='M440.813,280.5c0-7.65,2.55-15.3,2.55-25.5s0-17.85-2.55-25.5l53.55-43.35c5.1-5.1,5.1-10.2,2.55-15.3l-51-89.25 c-2.55-2.55-7.649-5.1-15.3-2.55l-63.75,25.5c-12.75-10.2-28.05-17.85-43.35-25.5l-10.2-66.3C315.863,5.1,308.212,0,303.113,0 h-102c-5.101,0-12.75,5.1-12.75,10.2l-10.2,68.85c-15.3,5.1-28.05,15.3-43.35,25.5l-61.2-25.5c-7.65-2.55-12.75,0-17.851,5.1 l-51,89.25c-2.55,2.55,0,10.2,5.1,15.3l53.55,40.8c0,7.65-2.55,15.3-2.55,25.5s0,17.85,2.55,25.5l-53.55,43.35 c-5.1,5.101-5.1,10.2-2.55,15.301l51,89.25c2.55,2.55,7.649,5.1,15.3,2.55l63.75-25.5c12.75,10.2,28.05,17.85,43.35,25.5 l10.2,66.3c0,5.1,5.1,10.2,12.75,10.2h102c5.101,0,12.75-5.101,12.75-10.2l10.2-66.3c15.3-7.65,30.6-15.3,43.35-25.5l63.75,25.5 c5.101,2.55,12.75,0,15.301-5.101l51-89.25c2.55-5.1,2.55-12.75-2.551-15.3L440.813,280.5z M252.113,344.25 c-48.45,0-89.25-40.8-89.25-89.25s40.8-89.25,89.25-89.25s89.25,40.8,89.25,89.25S300.563,344.25,252.113,344.25z'/%3E%3C/g%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3C/svg%3E",
+														src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' version='1.1' id='Capa_1' x='0px' y='0px' width='507.451px' height='507.45px' viewBox='0 0 507.451 507.45' style='enable-background:new 0 0 507.451 507.45;fill: white;' xml:space='preserve'%3E%3Cg%3E%3Cg id='settings'%3E%3Cpath d='M440.813,280.5c0-7.65,2.55-15.3,2.55-25.5s0-17.85-2.55-25.5l53.55-43.35c5.1-5.1,5.1-10.2,2.55-15.3l-51-89.25 c-2.55-2.55-7.649-5.1-15.3-2.55l-63.75,25.5c-12.75-10.2-28.05-17.85-43.35-25.5l-10.2-66.3C315.863,5.1,308.212,0,303.113,0 h-102c-5.101,0-12.75,5.1-12.75,10.2l-10.2,68.85c-15.3,5.1-28.05,15.3-43.35,25.5l-61.2-25.5c-7.65-2.55-12.75,0-17.851,5.1 l-51,89.25c-2.55,2.55,0,10.2,5.1,15.3l53.55,40.8c0,7.65-2.55,15.3-2.55,25.5s0,17.85,2.55,25.5l-53.55,43.35 c-5.1,5.101-5.1,10.2-2.55,15.301l51,89.25c2.55,2.55,7.649,5.1,15.3,2.55l63.75-25.5c12.75,10.2,28.05,17.85,43.35,25.5 l10.2,66.3c0,5.1,5.1,10.2,12.75,10.2h102c5.101,0,12.75-5.101,12.75-10.2l10.2-66.3c15.3-7.65,30.6-15.3,43.35-25.5l63.75,25.5 c5.101,2.55,12.75,0,15.301-5.101l51-89.25c2.55-5.1,2.55-12.75-2.551-15.3L440.813,280.5z M252.113,344.25 c-48.45,0-89.25-40.8-89.25-89.25s40.8-89.25,89.25-89.25s89.25,40.8,89.25,89.25S300.563,344.25,252.113,344.25z'/%3E%3C/g%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3C/svg%3E",
 													},
 												}),
 											],
@@ -1060,8 +1094,7 @@ class Settings extends Bettersignal {
 											children: [
 												E("img").set({
 													props: {
-														src:
-															"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' version='1.1' id='Capa_1' x='0px' y='0px' width='753.23px' height='753.23px' viewBox='0 0 753.23 753.23' style='enable-background:new 0 0 753.23 753.23;fill: white;' xml:space='preserve'%3E%3Cg%3E%3Cg id='_x34__18_'%3E%3Cg%3E%3Cpath d='M635.538,94.154h-141.23V47.077C494.308,21.067,473.24,0,447.23,0H306c-26.01,0-47.077,21.067-47.077,47.077v47.077 h-141.23c-26.01,0-47.077,21.067-47.077,47.077v47.077c0,25.986,21.067,47.053,47.03,47.077h517.917 c25.986-0.024,47.054-21.091,47.054-47.077V141.23C682.615,115.221,661.548,94.154,635.538,94.154z M447.23,94.154H306V70.615 c0-12.993,10.545-23.539,23.538-23.539h94.154c12.993,0,23.538,10.545,23.538,23.539V94.154z M117.692,659.077 c0,51.996,42.157,94.153,94.154,94.153h329.539c51.996,0,94.153-42.157,94.153-94.153V282.461H117.692V659.077z M470.77,353.077 c0-12.993,10.545-23.539,23.538-23.539s23.538,10.545,23.538,23.539v282.461c0,12.993-10.545,23.539-23.538,23.539 s-23.538-10.546-23.538-23.539V353.077z M353.077,353.077c0-12.993,10.545-23.539,23.539-23.539s23.538,10.545,23.538,23.539 v282.461c0,12.993-10.545,23.539-23.538,23.539s-23.539-10.546-23.539-23.539V353.077z M235.384,353.077 c0-12.993,10.545-23.539,23.539-23.539s23.539,10.545,23.539,23.539v282.461c0,12.993-10.545,23.539-23.539,23.539 s-23.539-10.546-23.539-23.539V353.077z'/%3E%3C/g%3E%3C/g%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3C/svg%3E",
+														src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' version='1.1' id='Capa_1' x='0px' y='0px' width='753.23px' height='753.23px' viewBox='0 0 753.23 753.23' style='enable-background:new 0 0 753.23 753.23;fill: white;' xml:space='preserve'%3E%3Cg%3E%3Cg id='_x34__18_'%3E%3Cg%3E%3Cpath d='M635.538,94.154h-141.23V47.077C494.308,21.067,473.24,0,447.23,0H306c-26.01,0-47.077,21.067-47.077,47.077v47.077 h-141.23c-26.01,0-47.077,21.067-47.077,47.077v47.077c0,25.986,21.067,47.053,47.03,47.077h517.917 c25.986-0.024,47.054-21.091,47.054-47.077V141.23C682.615,115.221,661.548,94.154,635.538,94.154z M447.23,94.154H306V70.615 c0-12.993,10.545-23.539,23.538-23.539h94.154c12.993,0,23.538,10.545,23.538,23.539V94.154z M117.692,659.077 c0,51.996,42.157,94.153,94.154,94.153h329.539c51.996,0,94.153-42.157,94.153-94.153V282.461H117.692V659.077z M470.77,353.077 c0-12.993,10.545-23.539,23.538-23.539s23.538,10.545,23.538,23.539v282.461c0,12.993-10.545,23.539-23.538,23.539 s-23.538-10.546-23.538-23.539V353.077z M353.077,353.077c0-12.993,10.545-23.539,23.539-23.539s23.538,10.545,23.538,23.539 v282.461c0,12.993-10.545,23.539-23.538,23.539s-23.539-10.546-23.539-23.539V353.077z M235.384,353.077 c0-12.993,10.545-23.539,23.539-23.539s23.539,10.545,23.539,23.539v282.461c0,12.993-10.545,23.539-23.539,23.539 s-23.539-10.546-23.539-23.539V353.077z'/%3E%3C/g%3E%3C/g%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3C/svg%3E",
 													},
 												}),
 											],
@@ -1177,8 +1210,7 @@ class Settings extends Bettersignal {
 											children: [
 												E("img").set({
 													props: {
-														src:
-															"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' version='1.1' id='Capa_1' x='0px' y='0px' width='507.451px' height='507.45px' viewBox='0 0 507.451 507.45' style='enable-background:new 0 0 507.451 507.45;fill: white;' xml:space='preserve'%3E%3Cg%3E%3Cg id='settings'%3E%3Cpath d='M440.813,280.5c0-7.65,2.55-15.3,2.55-25.5s0-17.85-2.55-25.5l53.55-43.35c5.1-5.1,5.1-10.2,2.55-15.3l-51-89.25 c-2.55-2.55-7.649-5.1-15.3-2.55l-63.75,25.5c-12.75-10.2-28.05-17.85-43.35-25.5l-10.2-66.3C315.863,5.1,308.212,0,303.113,0 h-102c-5.101,0-12.75,5.1-12.75,10.2l-10.2,68.85c-15.3,5.1-28.05,15.3-43.35,25.5l-61.2-25.5c-7.65-2.55-12.75,0-17.851,5.1 l-51,89.25c-2.55,2.55,0,10.2,5.1,15.3l53.55,40.8c0,7.65-2.55,15.3-2.55,25.5s0,17.85,2.55,25.5l-53.55,43.35 c-5.1,5.101-5.1,10.2-2.55,15.301l51,89.25c2.55,2.55,7.649,5.1,15.3,2.55l63.75-25.5c12.75,10.2,28.05,17.85,43.35,25.5 l10.2,66.3c0,5.1,5.1,10.2,12.75,10.2h102c5.101,0,12.75-5.101,12.75-10.2l10.2-66.3c15.3-7.65,30.6-15.3,43.35-25.5l63.75,25.5 c5.101,2.55,12.75,0,15.301-5.101l51-89.25c2.55-5.1,2.55-12.75-2.551-15.3L440.813,280.5z M252.113,344.25 c-48.45,0-89.25-40.8-89.25-89.25s40.8-89.25,89.25-89.25s89.25,40.8,89.25,89.25S300.563,344.25,252.113,344.25z'/%3E%3C/g%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3C/svg%3E",
+														src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' version='1.1' id='Capa_1' x='0px' y='0px' width='507.451px' height='507.45px' viewBox='0 0 507.451 507.45' style='enable-background:new 0 0 507.451 507.45;fill: white;' xml:space='preserve'%3E%3Cg%3E%3Cg id='settings'%3E%3Cpath d='M440.813,280.5c0-7.65,2.55-15.3,2.55-25.5s0-17.85-2.55-25.5l53.55-43.35c5.1-5.1,5.1-10.2,2.55-15.3l-51-89.25 c-2.55-2.55-7.649-5.1-15.3-2.55l-63.75,25.5c-12.75-10.2-28.05-17.85-43.35-25.5l-10.2-66.3C315.863,5.1,308.212,0,303.113,0 h-102c-5.101,0-12.75,5.1-12.75,10.2l-10.2,68.85c-15.3,5.1-28.05,15.3-43.35,25.5l-61.2-25.5c-7.65-2.55-12.75,0-17.851,5.1 l-51,89.25c-2.55,2.55,0,10.2,5.1,15.3l53.55,40.8c0,7.65-2.55,15.3-2.55,25.5s0,17.85,2.55,25.5l-53.55,43.35 c-5.1,5.101-5.1,10.2-2.55,15.301l51,89.25c2.55,2.55,7.649,5.1,15.3,2.55l63.75-25.5c12.75,10.2,28.05,17.85,43.35,25.5 l10.2,66.3c0,5.1,5.1,10.2,12.75,10.2h102c5.101,0,12.75-5.101,12.75-10.2l10.2-66.3c15.3-7.65,30.6-15.3,43.35-25.5l63.75,25.5 c5.101,2.55,12.75,0,15.301-5.101l51-89.25c2.55-5.1,2.55-12.75-2.551-15.3L440.813,280.5z M252.113,344.25 c-48.45,0-89.25-40.8-89.25-89.25s40.8-89.25,89.25-89.25s89.25,40.8,89.25,89.25S300.563,344.25,252.113,344.25z'/%3E%3C/g%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3C/svg%3E",
 													},
 												}),
 											],
@@ -1194,8 +1226,7 @@ class Settings extends Bettersignal {
 											children: [
 												E("img").set({
 													props: {
-														src:
-															"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' version='1.1' id='Capa_1' x='0px' y='0px' width='753.23px' height='753.23px' viewBox='0 0 753.23 753.23' style='enable-background:new 0 0 753.23 753.23;fill: white;' xml:space='preserve'%3E%3Cg%3E%3Cg id='_x34__18_'%3E%3Cg%3E%3Cpath d='M635.538,94.154h-141.23V47.077C494.308,21.067,473.24,0,447.23,0H306c-26.01,0-47.077,21.067-47.077,47.077v47.077 h-141.23c-26.01,0-47.077,21.067-47.077,47.077v47.077c0,25.986,21.067,47.053,47.03,47.077h517.917 c25.986-0.024,47.054-21.091,47.054-47.077V141.23C682.615,115.221,661.548,94.154,635.538,94.154z M447.23,94.154H306V70.615 c0-12.993,10.545-23.539,23.538-23.539h94.154c12.993,0,23.538,10.545,23.538,23.539V94.154z M117.692,659.077 c0,51.996,42.157,94.153,94.154,94.153h329.539c51.996,0,94.153-42.157,94.153-94.153V282.461H117.692V659.077z M470.77,353.077 c0-12.993,10.545-23.539,23.538-23.539s23.538,10.545,23.538,23.539v282.461c0,12.993-10.545,23.539-23.538,23.539 s-23.538-10.546-23.538-23.539V353.077z M353.077,353.077c0-12.993,10.545-23.539,23.539-23.539s23.538,10.545,23.538,23.539 v282.461c0,12.993-10.545,23.539-23.538,23.539s-23.539-10.546-23.539-23.539V353.077z M235.384,353.077 c0-12.993,10.545-23.539,23.539-23.539s23.539,10.545,23.539,23.539v282.461c0,12.993-10.545,23.539-23.539,23.539 s-23.539-10.546-23.539-23.539V353.077z'/%3E%3C/g%3E%3C/g%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3C/svg%3E",
+														src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' version='1.1' id='Capa_1' x='0px' y='0px' width='753.23px' height='753.23px' viewBox='0 0 753.23 753.23' style='enable-background:new 0 0 753.23 753.23;fill: white;' xml:space='preserve'%3E%3Cg%3E%3Cg id='_x34__18_'%3E%3Cg%3E%3Cpath d='M635.538,94.154h-141.23V47.077C494.308,21.067,473.24,0,447.23,0H306c-26.01,0-47.077,21.067-47.077,47.077v47.077 h-141.23c-26.01,0-47.077,21.067-47.077,47.077v47.077c0,25.986,21.067,47.053,47.03,47.077h517.917 c25.986-0.024,47.054-21.091,47.054-47.077V141.23C682.615,115.221,661.548,94.154,635.538,94.154z M447.23,94.154H306V70.615 c0-12.993,10.545-23.539,23.538-23.539h94.154c12.993,0,23.538,10.545,23.538,23.539V94.154z M117.692,659.077 c0,51.996,42.157,94.153,94.154,94.153h329.539c51.996,0,94.153-42.157,94.153-94.153V282.461H117.692V659.077z M470.77,353.077 c0-12.993,10.545-23.539,23.538-23.539s23.538,10.545,23.538,23.539v282.461c0,12.993-10.545,23.539-23.538,23.539 s-23.538-10.546-23.538-23.539V353.077z M353.077,353.077c0-12.993,10.545-23.539,23.539-23.539s23.538,10.545,23.538,23.539 v282.461c0,12.993-10.545,23.539-23.538,23.539s-23.539-10.546-23.539-23.539V353.077z M235.384,353.077 c0-12.993,10.545-23.539,23.539-23.539s23.539,10.545,23.539,23.539v282.461c0,12.993-10.545,23.539-23.539,23.539 s-23.539-10.546-23.539-23.539V353.077z'/%3E%3C/g%3E%3C/g%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3C/svg%3E",
 													},
 												}),
 											],
@@ -1250,8 +1281,7 @@ class Popup {
 					children: [
 						E("img").set({
 							props: {
-								src:
-									"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' version='1.1' id='Capa_1' x='0px' y='0px' viewBox='0 0 52.001 52.001' style='enable-background:new 0 0 52.001 52.001;fill: white;' xml:space='preserve'%3E%3Cg%3E%3Cg%3E%3Cpath style='/* fill:%23030104; */' d='M47.743,41.758L33.955,26.001l13.788-15.758c2.343-2.344,2.343-6.143,0-8.486 c-2.345-2.343-6.144-2.342-8.486,0.001L26,16.91L12.743,1.758C10.4-0.584,6.602-0.585,4.257,1.757 c-2.343,2.344-2.343,6.143,0,8.486l13.788,15.758L4.257,41.758c-2.343,2.343-2.343,6.142-0.001,8.485 c2.344,2.344,6.143,2.344,8.487,0L26,35.091l13.257,15.152c2.345,2.344,6.144,2.344,8.487,0 C50.086,47.9,50.086,44.101,47.743,41.758z'/%3E%3C/g%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3C/svg%3E",
+								src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' version='1.1' id='Capa_1' x='0px' y='0px' viewBox='0 0 52.001 52.001' style='enable-background:new 0 0 52.001 52.001;fill: white;' xml:space='preserve'%3E%3Cg%3E%3Cg%3E%3Cpath style='/* fill:%23030104; */' d='M47.743,41.758L33.955,26.001l13.788-15.758c2.343-2.344,2.343-6.143,0-8.486 c-2.345-2.343-6.144-2.342-8.486,0.001L26,16.91L12.743,1.758C10.4-0.584,6.602-0.585,4.257,1.757 c-2.343,2.344-2.343,6.143,0,8.486l13.788,15.758L4.257,41.758c-2.343,2.343-2.343,6.142-0.001,8.485 c2.344,2.344,6.143,2.344,8.487,0L26,35.091l13.257,15.152c2.345,2.344,6.144,2.344,8.487,0 C50.086,47.9,50.086,44.101,47.743,41.758z'/%3E%3C/g%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3Cg%3E%3C/g%3E%3C/svg%3E",
 							},
 						}),
 					],
@@ -1347,7 +1377,7 @@ class ContextMenu {
 						// 	var link = e.src.replaceAll("file:///", "").replaceAll("\\", "/");
 						// }
 						// var name = fileName ? fileName : `image-${new Date().format("YYYY-MM-DD_hh-mm-ss")}.${ext ? ext : "jpeg"}`;
-						// Bs.windows.saveDataToDisk({
+						// Bs.storage.saveDataToDisk({
 						// 	data: fs.readFileSync(link),
 						// 	name: name,
 						// }).then(({ fullPath }) => {
@@ -1367,7 +1397,7 @@ class ContextMenu {
 							var attachment = message.attributes.attachments.find((attachement) => {
 								Bs.path.normalize("" + attachement.thumbnail.src) === Bs.path.normalize(e.src);
 							});
-							Bs.windows
+							Bs.storage
 								.saveDataToDisk({
 									data: fs.readFileSync(attachment.src),
 									name: name,
@@ -1424,7 +1454,7 @@ class ContextMenu {
 						var name = `sticker-${new Date().format("YYYY-MM-DD_hh-mm-ss")}.${attachment.contentType.match(/(?!.*\/).*/gm)[0]}`;
 						var link = attachment.url;
 						if (!name || !link) return false;
-						Bs.windows
+						Bs.storage
 							.saveDataToDisk({
 								data: fs.readFileSync(link),
 								name: name,
@@ -1462,7 +1492,7 @@ class ContextMenu {
 						//var reactEventHandlers = e[Object.keys(e).find((_e) => _e.includes("__reactEventHandlers$"))]
 						var imageUrl = e.src.replaceAll("file:///", "").replaceAll("\\", "/");
 						if (!imageUrl) return false;
-						Bs.windows
+						Bs.storage
 							.saveDataToDisk({
 								data: fs.readFileSync(imageUrl),
 								name: `avatar-${new Date().format("YYYY-MM-DD_hh-mm-ss")}.jpeg`,
