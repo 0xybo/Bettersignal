@@ -22,8 +22,8 @@
 	},
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"install": "node installer/install",
-		"update": "node installer/update"
+		"app:install": "node installer/install",
+		"app:update": "node installer/update"
 	},
 	"repository": {
 		"type": "git",

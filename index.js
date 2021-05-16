@@ -19,7 +19,7 @@ var bettersignalPath = path.join(process.env.APPDATA, "bettersignal");
 var pluginsFolder = path.join(bettersignalPath, "plugins");
 var themesFolder = path.join(bettersignalPath, "themes");
 var settingsPath = path.join(bettersignalPath, "settings.json");
-var translatePath = "./translate.json";
+var translatePath = "./messages.json";
 var selectorList = {
 	avatarPopup: ".module-avatar-popup",
 	avatarPopupItem: ".module-avatar-popup__item",
