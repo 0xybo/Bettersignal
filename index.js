@@ -6,11 +6,8 @@ const ReactDOM = require("react-dom");
 const React_Contextmenu = require("react-contextmenu");
 const Electron = require("electron");
 const http = require("http");
-const Tooltip = require("../ts/components/Tooltip");
-const BsApi = require("./BsApi");
-const popperJs = require("popper.js");
-const classnames = require("classnames");
-const https = require("https");
+var BsApi = require("./BsApi");
+const jf = require("jsonfile");
 
 var Signal;
 /** @type {Bettersignal} */
@@ -40,332 +37,408 @@ var classList = {
 };
 
 class Bettersignal {
-	constructor() {}
-	copyImage(src) {
-		let isURL = src.isURL();
-		if (isURL ? (isURL.protocol === "http:" || isURL.protocol === "https:" ? true : false) : false) {
-			http.request(src, { encoding: null }, (error, response, buffer) => {
-				var file = path.join(process.env.TEMP, `BsTempFile-${new Date().format("YYYY-MM-DD_hh-mm-ss")}`);
-				fs.writeFileSync(file, buffer, { encoding: null });
-				Electron.clipboard.write({
-					image: file,
+	constructor() {
+		/** @type{Settings} */
+		this.settings={};
+		this.contextMenu={};
+		this.locale = require(settingsPath).language || "en";
+		this.utilPath = {
+			bettersignal: path.join(process.env.APPDATA, "bettersignal"),
+			pluginsFolder: path.join(bettersignalPath, "plugins"),
+			themesFolder: path.join(bettersignalPath, "themes"),
+			settings: path.join(bettersignalPath, "settings.json"),
+			translate: "./messages.json",
+		};
+		this.copyImage = function (src) {
+			let isURL = src.isURL();
+			if (isURL ? (isURL.protocol === "http:" || isURL.protocol === "https:" ? true : false) : false) {
+				http.request(src, { encoding: null }, (error, response, buffer) => {
+					var file = path.join(process.env.TEMP, `BsTempFile-${new Date().format("YYYY-MM-DD_hh-mm-ss")}`);
+					fs.writeFileSync(file, buffer, { encoding: null });
+					Electron.clipboard.write({
+						image: file,
+					});
+					fs.unlinkSync(file);
+					this.toast.new(this.translate.get("imageCopied"), {
+						type: "success",
+						icon: "ok",
+					});
 				});
-				fs.unlinkSync(file);
-				Bs.toast.new(Bs.translate.get("imageCopied"), {
+			} else {
+				src = src.replace("file:///", "");
+				if (!fs.existsSync(src)) return false;
+				Electron.clipboard.write({
+					image: src,
+				});
+				this.toast.new(this.translate.get("imageCopied"), {
 					type: "success",
 					icon: "ok",
 				});
-			});
-		} else {
-			src = src.replace("file:///", "");
-			if (!fs.existsSync(src)) return false;
-			Electron.clipboard.write({
-				image: src,
-			});
-			Bs.toast.new(Bs.translate.get("imageCopied"), {
-				type: "success",
-				icon: "ok",
-			});
-			return true;
-		}
-	}
-	copyText(text) {
-		if (typeof text != "string") return false;
-		navigator.clipboard.writeText(text);
-		return true;
-	}
-	url = {
-		parse(url) {
-			if (url.isURL()) {
-				return new URL(url);
-			} else {
-				return null;
-			}
-		},
-		open(url) {
-			if (url instanceof String ? url.isURL() : false) {
-				Electron.shell.openExternal(url);
 				return true;
-			} else {
-				return false;
 			}
-		},
-	};
-	path = {
-		parse(path) {
-			if (!path.isPath()) return null;
-			var normalized = Bs.path.normalize(path);
-			var parsed = {
-				origin: path,
-				protocol: "file:///",
-				normalized: normalized,
-				dir: normalized.match(/(?<=(file:\/\/\/)?([a-z]:))(([\\\/][^\\\/\n\:\*\?\"\<\>\|]+)+[\\\/]?)/gi)[0],
-				path: normalized.match(/((?<=(?<!\/\/)[\\\/])[^\\\/\n\:\*\?\"\<\>\|]+)/gi),
-				base: /((?<=(?<!\/\/)[\\\/])[^\\\/\n\:\*\?\"\<\>\|]+)$/gi.test(path) ? normalized.match(/((?<=(?<!\/\/)[\\\/])[^\\\/\n\:\*\?\"\<\>\|]+)$/gi)[0] : null,
-				ext: /(?<=(?<=(?<!\/\/)[\\\/])[^\\\/\n\:\*\?\"\<\>\|]+)((?<=\.)[a-z]+)$/gi.test(path) ? normalized.match(/(?<=(?<=(?<!\/\/)[\\\/])[^\\\/\n\:\*\?\"\<\>\|]+)((?<=\.)[a-z]+)$/gi)[0] : null,
-			};
-			return parsed;
-		},
-		normalize(path) {
-			if (!path.isPath()) return null;
-			var normalized = path.replace(/file:\/\/\//gi, "").replace(/\\/gi, "/");
-			return normalized;
-		},
-	};
-	messages = {
-		async getFromElement(elem) {
-			var parent = elem.closest(Bs.signal.selectorList.messageContainer);
-			return await Bs.message.getById(parent.id);
-		},
-		async getById(id) {
-			return await Signal.Data.getMessageById(id);
-		},
-		send: function () {
-			let target = document.querySelector(".module-composition-area__input .ql-editor.ql-editor--loaded");
-			if (!target) return false;
-			let event = new KeyboardEvent("keydown", {
-				key: "Enter",
-				which: 13,
-				keyCode: 13,
-				metaKey: false,
-				ctrlKey: false,
-				shiftKey: false,
-				altKey: false,
-				target: target,
-				srcElement: target,
-			});
-			target.click()
-			let success = target.dispatchEvent(event);
-			if(success) return true;
-			else return false;
-		}.bind(this),
-	};
-	conversation = {
-		getAll: async function () {
-			return await window.getConversations();
-		}.bind(this),
-		get: async function (id) {
-			var conversations = await this.conversation.getAll();
-			var conversation = conversations.get(id);
-			if (!conversation) return false;
-			return conversation;
-		}.bind(this),
-		current: async function () {
-			let conversationElement = document.querySelector("[id*=conversation-].conversation");
-			if (!conversationElement) return false;
-			var conversation = await this.conversation.get(conversationElement.id.match(/(?<=conversation\-).*$/gim)[0]);
-			if (!conversation) return false;
-			var view = new window.Whisper.ConversationView({
-				model: conversation,
-			});
-			view.attachmentListView.el = document.querySelector(".module-composition-area__attachment-list");
-			return view;
-		}.bind(this),
-	};
-	components = {
-		spinner({ moduleClassName, size, svgSize, direction }) {
-			return React.createElement(
-				"div",
-				{
-					className: `module-spinner__container module-spinner__container--${svgSize} ${direction ? `module-spinner__container--${direction}` : null} ${direction ? `module-spinner__container--${svgSize}-${direction}` : null} ${moduleClassName ? `${moduleClassName}__container` : null}`,
-					style: {
-						height: size,
-						width: size,
-					},
-				},
-				React.createElement("div", {
-					className: `module-spinner__circle module-spinner__circle--${svgSize} ${direction ? `module-spinner__circle--${direction}` : null} ${direction ? `module-spinner__circle--${svgSize}-${direction}` : null} ${moduleClassName ? `${moduleClassName}__circle` : null}`,
-				}),
-				React.createElement("div", {
-					className: `module-spinner__arc module-spinner__arc--${svgSize} ${direction ? `module-spinner__arc--${direction}` : null} ${direction ? `module-spinner__arc--${svgSize}-${direction}` : null} ${moduleClassName ? `${moduleClassName}__arc` : null}`,
-				})
-			);
-		},
-		switch(value, callback) {
-			return E("div").set({
-				props: {
-					class: "BsSwitch",
-					value: Boolean(value),
-				},
-				events: {
-					click: function (e) {
-						var elem;
-						if (!e.target.classList.contains("BsSwitch")) elem = e.target.parentElement;
-						else elem = e.target;
-						if (elem.getAttribute("value") == "true") elem.setAttribute("value", "false");
-						else elem.setAttribute("value", "true");
-						callback(elem);
-					},
-				},
-				children: [E("div")],
-			});
-		},
-		svgIcons: {
-			website:
-				"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2 2 20 20' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='M0 0h24v24H0z' fill='none'%3E%3C/path%3E%3Cpath d='M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95c-.32-1.25-.78-2.45-1.38-3.56 1.84.63 3.37 1.91 4.33 3.56zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56-1.84-.63-3.37-1.9-4.33-3.56zm2.95-8H5.08c.96-1.66 2.49-2.93 4.33-3.56C8.81 5.55 8.35 6.75 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95c-.96 1.65-2.49 2.93-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z'%3E%3C/path%3E%3C/svg%3E",
-			discord:
-				"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32' style='&%2310; fill: white;&%2310;'%3E%3Cpath d='M26.964 0c1.875 0 3.385 1.516 3.474 3.302v28.698l-3.568-3.031-1.958-1.781-2.141-1.865 0.891 2.938h-18.714c-1.87 0-3.385-1.417-3.385-3.302v-21.651c0-1.786 1.516-3.302 3.391-3.302h22zM18.807 7.578h-0.042l-0.271 0.266c2.766 0.802 4.104 2.052 4.104 2.052-1.781-0.891-3.391-1.339-4.995-1.521-1.156-0.177-2.318-0.083-3.297 0h-0.271c-0.625 0-1.958 0.271-3.745 0.984-0.62 0.271-0.979 0.448-0.979 0.448s1.333-1.339 4.281-2.052l-0.182-0.177c0 0-2.229-0.089-4.635 1.693 0 0-2.406 4.193-2.406 9.359 0 0 1.333 2.318 4.99 2.406 0 0 0.536-0.708 1.073-1.333-2.052-0.625-2.854-1.875-2.854-1.875s0.182 0.089 0.448 0.266h0.078c0.042 0 0.063 0.021 0.083 0.042v0.010c0.021 0.021 0.042 0.036 0.078 0.036 0.443 0.182 0.88 0.359 1.24 0.536 0.625 0.266 1.422 0.536 2.401 0.714 1.24 0.182 2.661 0.266 4.281 0 0.797-0.182 1.599-0.354 2.401-0.714 0.516-0.266 1.156-0.531 1.859-0.984 0 0-0.797 1.25-2.938 1.875 0.438 0.62 1.057 1.333 1.057 1.333 3.661-0.083 5.083-2.401 5.161-2.302 0-5.161-2.422-9.359-2.422-9.359-2.177-1.62-4.219-1.682-4.578-1.682l0.073-0.026zM19.031 13.464c0.938 0 1.693 0.797 1.693 1.776 0 0.99-0.76 1.786-1.693 1.786-0.938 0-1.693-0.797-1.693-1.776 0-0.99 0.76-1.786 1.693-1.786zM12.974 13.464c0.932 0 1.688 0.797 1.688 1.776 0 0.99-0.76 1.786-1.693 1.786-0.938 0-1.698-0.797-1.698-1.776 0-0.99 0.76-1.786 1.698-1.786z'/%3E%3C/svg%3E",
-			github: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='m12 .5c-6.63 0-12 5.28-12 11.792 0 5.211 3.438 9.63 8.205 11.188.6.111.82-.254.82-.567 0-.28-.01-1.022-.015-2.005-3.338.711-4.042-1.582-4.042-1.582-.546-1.361-1.335-1.725-1.335-1.725-1.087-.731.084-.716.084-.716 1.205.082 1.838 1.215 1.838 1.215 1.07 1.803 2.809 1.282 3.495.981.108-.763.417-1.282.76-1.577-2.665-.295-5.466-1.309-5.466-5.827 0-1.287.465-2.339 1.235-3.164-.135-.298-.54-1.497.105-3.121 0 0 1.005-.316 3.3 1.209.96-.262 1.98-.392 3-.398 1.02.006 2.04.136 3 .398 2.28-1.525 3.285-1.209 3.285-1.209.645 1.624.24 2.823.12 3.121.765.825 1.23 1.877 1.23 3.164 0 4.53-2.805 5.527-5.475 5.817.42.354.81 1.077.81 2.182 0 1.578-.015 2.846-.015 3.229 0 .309.21.678.825.56 4.801-1.548 8.236-5.97 8.236-11.173 0-6.512-5.373-11.792-12-11.792z'%3E%3C/path%3E%3C/svg%3E",
-			patreon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='m0 .5h4.219v23h-4.219z'%3E%3C/path%3E%3Cpath d='m15.384.5c-4.767 0-8.644 3.873-8.644 8.633 0 4.75 3.877 8.61 8.644 8.61 4.754 0 8.616-3.865 8.616-8.61 0-4.759-3.863-8.633-8.616-8.633z'%3E%3C/path%3E%3C/svg%3E",
-			support:
-				"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2 2 20 20' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='M0 0h24v24H0z' fill='none'%3E%3C/path%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z'%3E%3C/path%3E%3C/svg%3E",
-			donate: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2 2 20 20' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='M0 0h24v24H0z' fill='none'%3E%3C/path%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z'%3E%3C/path%3E%3C/svg%3E",
-		},
-	};
-	signal = {
-		classList: {},
-		selectorList: {
-			messageContainer: ".module-timeline__message-container",
-		},
-	};
-	log = {
-		info(...args) {
-			if (console._log) console._log(...args);
-			else console.log(...args);
-		},
-		error(...args) {
-			if (console._error) console._error(...args);
-			else console.error(...args);
-		},
-		warn(...args) {
-			if (console._warn) console._warn(...args);
-			else console.warn(...args);
-		},
-	};
-	css = {
-		inject: function (obj) {
-			var css = ``;
-			Object.entries(obj).forEach(([key, value]) => {
-				var prop = ``;
-				Object.entries(value).forEach(([key, value]) => {
-					prop += `\n    ${key}: ${value};`;
+		}.bind(this);
+		this.copyText = function (text) {
+			if (typeof text != "string") return false;
+			navigator.clipboard.writeText(text);
+			return true;
+		}.bind(this);
+		this.url = {
+			parse: function (url) {
+				if (url.isURL()) {
+					return new URL(url);
+				} else {
+					return null;
+				}
+			}.bind(this),
+			open: function (url) {
+				if (url instanceof String ? url.isURL() : false) {
+					Electron.shell.openExternal(url);
+					return true;
+				} else {
+					return false;
+				}
+			}.bind(this),
+		};
+		this.path = {
+			parse: function (path) {
+				if (!path.isPath()) return null;
+				var normalized = this.path.normalize(path);
+				var parsed = {
+					origin: path,
+					protocol: "file:///",
+					normalized: normalized,
+					dir: normalized.match(/(?<=(file:\/\/\/)?([a-z]:))(([\\\/][^\\\/\n\:\*\?\"\<\>\|]+)+[\\\/]?)/gi)[0],
+					path: normalized.match(/((?<=(?<!\/\/)[\\\/])[^\\\/\n\:\*\?\"\<\>\|]+)/gi),
+					base: /((?<=(?<!\/\/)[\\\/])[^\\\/\n\:\*\?\"\<\>\|]+)$/gi.test(path) ? normalized.match(/((?<=(?<!\/\/)[\\\/])[^\\\/\n\:\*\?\"\<\>\|]+)$/gi)[0] : null,
+					ext: /(?<=(?<=(?<!\/\/)[\\\/])[^\\\/\n\:\*\?\"\<\>\|]+)((?<=\.)[a-z]+)$/gi.test(path) ? normalized.match(/(?<=(?<=(?<!\/\/)[\\\/])[^\\\/\n\:\*\?\"\<\>\|]+)((?<=\.)[a-z]+)$/gi)[0] : null,
+				};
+				return parsed;
+			}.bind(this),
+			normalize: function (path) {
+				if (!path.isPath()) return null;
+				var normalized = path.replace(/file:\/\/\//gi, "").replace(/\\/gi, "/");
+				return normalized;
+			}.bind(this),
+		};
+		this.messages = {
+			getFromElement: async function (elem) {
+				var parent = elem.closest(this.signal.selectorList.messageContainer);
+				return await this.messages.getById(parent.id);
+			}.bind(this),
+			getById: async function (id) {
+				return await Signal.Data.getMessageById(id, {
+					Message: Whisper.Message,
 				});
-				css += `${css.length === 0 ? "" : "\n"}${key} {${prop}\n}`;
-			});
-			var e = E("style").set({
-				props: {
-					type: "text/css",
-				},
-				children: [css],
-			});
-			document.head.querySelector("BsStyle").append(e);
-		},
-	};
-	storage = {
-		saveData({ data, name }) {
-			return new Promise((resolve) => {
-				Signal.Migrations.saveAttachmentToDisk({ data, name }).then(({ fullPath, name }) => {
-					resolve({ fullPath, name });
+			}.bind(this),
+			send: function () {
+				let target = document.querySelector(".module-composition-area__input .ql-editor.ql-editor--loaded");
+				if (!target) return false;
+				let event = new KeyboardEvent("keydown", {
+					key: "Enter",
+					which: 13,
+					keyCode: 13,
+					metaKey: false,
+					ctrlKey: false,
+					shiftKey: false,
+					altKey: false,
+					target: target,
+					srcElement: target,
 				});
-			});
-		},
-		open(path) {
-			child_process.exec(`start "" ${path}`);
-		},
-	};
-	wait = {
-		element: function (selector, callback) {
-			const observer = new MutationObserver((mutations) => {
-				let element = document.querySelector(selector);
-				if (element) {
-					mutations.forEach((mutation) => {
-						mutation.addedNodes
-							? mutation.addedNodes.forEach((node) => {
-									if (element.isSameNode(node) || node.contains(element)) callback(element);
-							  })
-							: null;
+				target.click();
+				let success = target.dispatchEvent(event);
+				if (success) return true;
+				else return false;
+			}.bind(this),
+		};
+		this.conversation = {
+			getAll: async function () {
+				return await window.getConversations();
+			}.bind(this),
+			get: async function (id) {
+				var conversations = await this.conversation.getAll();
+				var conversation = conversations.get(id);
+				if (!conversation) return false;
+				return conversation;
+			}.bind(this),
+			current: async function () {
+				let conversationElement = document.querySelector("[id*=conversation-].conversation");
+				if (!conversationElement) return false;
+				var conversation = await this.conversation.get(conversationElement.id.match(/(?<=conversation\-).*$/gim)[0]);
+				if (!conversation) return false;
+				var view = new window.Whisper.ConversationView({
+					model: conversation,
+				});
+				view.attachmentListView.el = document.querySelector(".module-composition-area__attachment-list");
+				return view;
+			}.bind(this),
+		};
+		this.components = {
+			media: {
+				image: function (url) {
+					// TODO components.media.image
+				}.bind(this),
+			},
+			inputs: {
+				switch: function ({ defaultValue = true, callback = function () {}, style = "", classList = [], attributes = {} }) {
+					var htmlProps = {
+						class: "BsSwitch" + classList.join(" "),
+						value: Boolean(defaultValue),
+						style: style,
+					};
+					Object.entries(attributes).forEach(([key, value]) => (htmlProps[key] = value));
+					return {
+						html: E("div").set({
+							props: htmlProps,
+							events: {
+								click: function (e) {
+									var elem;
+									if (!e.target.classList.contains("BsSwitch")) elem = e.target.parentElement;
+									else elem = e.target;
+									if (elem.getAttribute("value") == "true") elem.setAttribute("value", "false");
+									else elem.setAttribute("value", "true");
+									this.save()
+									callback(elem.getAttribute("value") == "true" ? true : false);
+								}.bind(this),
+							},
+							children: [E("div")],
+						}),
+						react: null, // TODO
+					};
+				}.bind(this),
+				select: function () {
+					// TODO components.inputs.select
+				}.bind(this),
+				text: function () {
+					// TODO components.inputs.text
+				}.bind(this),
+				radio: function () {
+					// TODO components.inputs.radio
+				}.bind(this),
+				date: function () {
+					// TODO components.inputs.date
+				}.bind(this),
+				cursor: function () {
+					// TODO components.inputs.cursor
+				}.bind(this),
+				color: function () {
+					// TODO components.inputs.color
+				}.bind(this),
+				file: function () {
+					// TODO components.inputs.file
+				}.bind(this),
+				folder: function () {
+					// TODO components.inputs.folder
+				}.bind(this),
+			},
+			spinner: function ({ moduleClassName, size, svgSize, direction }) {
+				return React.createElement(
+					"div",
+					{
+						className: `module-spinner__container module-spinner__container--${svgSize} ${direction ? `module-spinner__container--${direction}` : null} ${direction ? `module-spinner__container--${svgSize}-${direction}` : null} ${moduleClassName ? `${moduleClassName}__container` : null}`,
+						style: {
+							height: size,
+							width: size,
+						},
+					},
+					React.createElement("div", {
+						className: `module-spinner__circle module-spinner__circle--${svgSize} ${direction ? `module-spinner__circle--${direction}` : null} ${direction ? `module-spinner__circle--${svgSize}-${direction}` : null} ${moduleClassName ? `${moduleClassName}__circle` : null}`,
+					}),
+					React.createElement("div", {
+						className: `module-spinner__arc module-spinner__arc--${svgSize} ${direction ? `module-spinner__arc--${direction}` : null} ${direction ? `module-spinner__arc--${svgSize}-${direction}` : null} ${moduleClassName ? `${moduleClassName}__arc` : null}`,
+					})
+				);
+			}.bind(this),
+			switch: function (value, callback) {
+				return E("div").set({
+					props: {
+						class: "BsSwitch",
+						value: Boolean(value),
+						style: style,
+					},
+					events: {
+						click: function (e) {
+							var elem;
+							if (!e.target.classList.contains("BsSwitch")) elem = e.target.parentElement;
+							else elem = e.target;
+							if (elem.getAttribute("value") == "true") elem.setAttribute("value", "false");
+							else elem.setAttribute("value", "true");
+							callback(elem);
+						},
+					},
+					children: [E("div")],
+				});
+			}.bind(this),
+			svgIcons: {
+				website:
+					"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2 2 20 20' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='M0 0h24v24H0z' fill='none'%3E%3C/path%3E%3Cpath d='M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95c-.32-1.25-.78-2.45-1.38-3.56 1.84.63 3.37 1.91 4.33 3.56zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56-1.84-.63-3.37-1.9-4.33-3.56zm2.95-8H5.08c.96-1.66 2.49-2.93 4.33-3.56C8.81 5.55 8.35 6.75 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95c-.96 1.65-2.49 2.93-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z'%3E%3C/path%3E%3C/svg%3E",
+				discord:
+					"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32' style='&%2310; fill: white;&%2310;'%3E%3Cpath d='M26.964 0c1.875 0 3.385 1.516 3.474 3.302v28.698l-3.568-3.031-1.958-1.781-2.141-1.865 0.891 2.938h-18.714c-1.87 0-3.385-1.417-3.385-3.302v-21.651c0-1.786 1.516-3.302 3.391-3.302h22zM18.807 7.578h-0.042l-0.271 0.266c2.766 0.802 4.104 2.052 4.104 2.052-1.781-0.891-3.391-1.339-4.995-1.521-1.156-0.177-2.318-0.083-3.297 0h-0.271c-0.625 0-1.958 0.271-3.745 0.984-0.62 0.271-0.979 0.448-0.979 0.448s1.333-1.339 4.281-2.052l-0.182-0.177c0 0-2.229-0.089-4.635 1.693 0 0-2.406 4.193-2.406 9.359 0 0 1.333 2.318 4.99 2.406 0 0 0.536-0.708 1.073-1.333-2.052-0.625-2.854-1.875-2.854-1.875s0.182 0.089 0.448 0.266h0.078c0.042 0 0.063 0.021 0.083 0.042v0.010c0.021 0.021 0.042 0.036 0.078 0.036 0.443 0.182 0.88 0.359 1.24 0.536 0.625 0.266 1.422 0.536 2.401 0.714 1.24 0.182 2.661 0.266 4.281 0 0.797-0.182 1.599-0.354 2.401-0.714 0.516-0.266 1.156-0.531 1.859-0.984 0 0-0.797 1.25-2.938 1.875 0.438 0.62 1.057 1.333 1.057 1.333 3.661-0.083 5.083-2.401 5.161-2.302 0-5.161-2.422-9.359-2.422-9.359-2.177-1.62-4.219-1.682-4.578-1.682l0.073-0.026zM19.031 13.464c0.938 0 1.693 0.797 1.693 1.776 0 0.99-0.76 1.786-1.693 1.786-0.938 0-1.693-0.797-1.693-1.776 0-0.99 0.76-1.786 1.693-1.786zM12.974 13.464c0.932 0 1.688 0.797 1.688 1.776 0 0.99-0.76 1.786-1.693 1.786-0.938 0-1.698-0.797-1.698-1.776 0-0.99 0.76-1.786 1.698-1.786z'/%3E%3C/svg%3E",
+				github: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='m12 .5c-6.63 0-12 5.28-12 11.792 0 5.211 3.438 9.63 8.205 11.188.6.111.82-.254.82-.567 0-.28-.01-1.022-.015-2.005-3.338.711-4.042-1.582-4.042-1.582-.546-1.361-1.335-1.725-1.335-1.725-1.087-.731.084-.716.084-.716 1.205.082 1.838 1.215 1.838 1.215 1.07 1.803 2.809 1.282 3.495.981.108-.763.417-1.282.76-1.577-2.665-.295-5.466-1.309-5.466-5.827 0-1.287.465-2.339 1.235-3.164-.135-.298-.54-1.497.105-3.121 0 0 1.005-.316 3.3 1.209.96-.262 1.98-.392 3-.398 1.02.006 2.04.136 3 .398 2.28-1.525 3.285-1.209 3.285-1.209.645 1.624.24 2.823.12 3.121.765.825 1.23 1.877 1.23 3.164 0 4.53-2.805 5.527-5.475 5.817.42.354.81 1.077.81 2.182 0 1.578-.015 2.846-.015 3.229 0 .309.21.678.825.56 4.801-1.548 8.236-5.97 8.236-11.173 0-6.512-5.373-11.792-12-11.792z'%3E%3C/path%3E%3C/svg%3E",
+				patreon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='m0 .5h4.219v23h-4.219z'%3E%3C/path%3E%3Cpath d='m15.384.5c-4.767 0-8.644 3.873-8.644 8.633 0 4.75 3.877 8.61 8.644 8.61 4.754 0 8.616-3.865 8.616-8.61 0-4.759-3.863-8.633-8.616-8.633z'%3E%3C/path%3E%3C/svg%3E",
+				support:
+					"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2 2 20 20' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='M0 0h24v24H0z' fill='none'%3E%3C/path%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z'%3E%3C/path%3E%3C/svg%3E",
+				donate: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2 2 20 20' fill='%23FFFFFF' style='width: 18px; height: 18px;'%3E%3Cpath d='M0 0h24v24H0z' fill='none'%3E%3C/path%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z'%3E%3C/path%3E%3C/svg%3E",
+			},
+		};
+		this.signal = {
+			classList: {},
+			selectorList: {
+				messageContainer: ".module-timeline__message-container",
+			},
+			attachmentFolder: path.join(process.env.APPDATA, "Signal/attachments.noindex"),
+		};
+		this.log = {
+			info(...args) {
+				if (console._log) console._log(...args);
+				else console.log(...args);
+			},
+			error(...args) {
+				if (console._error) console._error(...args);
+				else console.error(...args);
+			},
+			warn(...args) {
+				if (console._warn) console._warn(...args);
+				else console.warn(...args);
+			},
+		};
+		this.css = {
+			inject: function (obj) {
+				var css = ``;
+				Object.entries(obj).forEach(([key, value]) => {
+					var prop = ``;
+					Object.entries(value).forEach(([key, value]) => {
+						prop += `\n    ${key}: ${value};`;
 					});
-				}
-			});
-			observer.observe(document.body, {
-				childList: true,
-				subtree: true,
-			});
-			return observer;
-		},
-		elementOnce: function (selector) {
-			return new Promise((resolve) => {
-				if (document.querySelector(selector)) {
-					return resolve(document.querySelector(selector));
-				}
+					css += `${css.length === 0 ? "" : "\n"}${key} {${prop}\n}`;
+				});
+				var e = E("style").set({
+					props: {
+						type: "text/css",
+					},
+					children: [css],
+				});
+				document.head.querySelector("BsStyle").append(e);
+			}.bind(this),
+		};
+		this.storage = {
+			saveData: function ({ data, name }) {
+				return new Promise((resolve) => {
+					Signal.Migrations.saveAttachmentToDisk({ data, name }).then((r) => {
+						if (!r) return;
+						const { fullPath, name } = r;
+						resolve({ fullPath, name });
+					});
+				});
+			}.bind(this),
+			open: function (path) {
+				child_process.exec(`start "" ${path}`);
+			}.bind(this),
+		};
+		this.wait = {
+			element: function (selector, callback) {
 				const observer = new MutationObserver((mutations) => {
-					if (document.querySelector(selector)) {
-						resolve(document.querySelector(selector));
-						observer.disconnect();
+					let element = document.querySelector(selector);
+					if (element) {
+						mutations.forEach((mutation) => {
+							mutation.addedNodes
+								? mutation.addedNodes.forEach((node) => {
+										if (element.isSameNode(node) || node.contains(element)) callback(element);
+								  })
+								: null;
+						});
 					}
 				});
 				observer.observe(document.body, {
 					childList: true,
 					subtree: true,
 				});
-			});
-		},
-	};
-	popup = {
-		new: function (content, { size = "auto", actions = [], type = "info" }) {
-			return new Popup(content, { size: size, actions: actions, type: type });
-		},
-		progress: function (message) {
-			var root = document.createElement("div");
-			document.querySelector("BsPopups").append(root);
-			ReactDOM.render(React.createElement("div", { role: "presentation", className: "module-progress-dialog__overlay" }, React.createElement("div", { className: "module-progress-dialog" }, React.createElement("div", { className: "module-progress-dialog__spinner" }, React.createElement(this.components.spinner, { svgSize: "normal", size: "39px", direction: "on-progress-dialog" })), React.createElement("div", { className: "module-progress-dialog__text" }, message))), root);
-			return {
-				remove: () => {
-					root.remove();
-				},
-			};
-		},
-		confirm: function ({ message, resolve = () => {}, okText, confirmStyle, cancelText, reject }) {
-			window.showConfirmationDialog({
-				message: message,
-				resolve: resolve,
-				okText: okText,
-				confirmStyle: confirmStyle,
-				cancelText: cancelText,
-				reject: reject,
-			});
-		},
-	};
-	toast = {
-		new: function (message, { events, initialize, type, icon } = {}) {
-			var props = {
-				render_attributes() {
-					return { toastMessage: message };
-				},
-			};
-			var _classList = ["BsToast"];
-			if (events) {
-				props.events = {};
-				Object.entries(events).forEach(([key, value]) => {
-					if ((key = "click")) _classList.push("toast-clickable");
-					props.events[key] = value;
+				return observer;
+			}.bind(this),
+			elementOnce: function (selector) {
+				return new Promise((resolve) => {
+					if (document.querySelector(selector)) {
+						return resolve(document.querySelector(selector));
+					}
+					const observer = new MutationObserver((mutations) => {
+						if (document.querySelector(selector)) {
+							resolve(document.querySelector(selector));
+							observer.disconnect();
+						}
+					});
+					observer.observe(document.body, {
+						childList: true,
+						subtree: true,
+					});
 				});
-			}
-			if (type === "error" || type === "success" || type === "warning") _classList.push("BsToast-" + type);
-			if (typeof initialize === "function") props.initialize = initialize;
-			if (icon === "ok") _classList.push("BsToastIcon-" + icon);
-			props.className = _classList.join(" ");
-			var toast = window.Whisper.ToastView.extend(props);
-			var _toast = new toast();
-			_toast.$el.appendTo(document.querySelector("BsToasts"));
-			_toast.render();
-		},
-	};
-	translate = {
-		get: function (key, substitutions = {}, messages, locale) {
-			if (!messages) var messages = this.translate.messages;
-			if (!locale) var locale = Bs.settings.props.language ? Bs.settings.props.language : "en";
-			if (!messages[key]) return "";
-			if (!messages[key]["en"]) return "";
-			/** @type {String} */
-			var text = messages[key][locale] ? messages[key][locale] : messages[key]["en"];
-			Object.entries(substitutions ? (typeof substitutions === "object" ? substitutions : {}) : {}).forEach(([key, value]) => {
-				text = text.replaceAll(`{{${key}}}`, value);
-			});
-			return text;
-		}.bind(this),
-		messages: require(translatePath),
-	};
+			}.bind(this),
+		};
+		this.popups = {
+			new: function (content, { size = "auto", actions = [], type = "info" }) {
+				return new Popup(content, { size: size, actions: actions, type: type });
+			}.bind(this),
+			progress: function (message) {
+				var root = document.createElement("div");
+				document.querySelector("BsPopups").append(root);
+				ReactDOM.render(React.createElement("div", { role: "presentation", className: "module-progress-dialog__overlay" }, React.createElement("div", { className: "module-progress-dialog" }, React.createElement("div", { className: "module-progress-dialog__spinner" }, React.createElement(this.components.spinner, { svgSize: "normal", size: "39px", direction: "on-progress-dialog" })), React.createElement("div", { className: "module-progress-dialog__text" }, message))), root);
+				return {
+					remove: () => {
+						root.remove();
+					},
+				};
+			}.bind(this),
+			confirm: function ({ message, resolve = () => {}, okText, confirmStyle, cancelText, reject }) {
+				window.showConfirmationDialog({
+					message: message,
+					resolve: resolve,
+					okText: okText,
+					confirmStyle: confirmStyle,
+					cancelText: cancelText,
+					reject: reject,
+				});
+			}.bind(this),
+		};
+		this.toast = {
+			new: function (message, { events, initialize, type, icon } = {}) {
+				var props = {
+					render_attributes() {
+						return { toastMessage: message };
+					},
+				};
+				var _classList = ["BsToast"];
+				if (events) {
+					props.events = {};
+					Object.entries(events).forEach(([key, value]) => {
+						if ((key = "click")) _classList.push("toast-clickable");
+						props.events[key] = value;
+					});
+				}
+				if (type === "error" || type === "success" || type === "warning") _classList.push("BsToast-" + type);
+				if (typeof initialize === "function") props.initialize = initialize;
+				if (icon === "ok") _classList.push("BsToastIcon-" + icon);
+				props.className = _classList.join(" ");
+				var toast = window.Whisper.ToastView.extend(props);
+				var _toast = new toast();
+				_toast.$el.appendTo(document.querySelector("BsToasts"));
+				_toast.render();
+			}.bind(this),
+		};
+		this.translate = {
+			get: function (key, substitutions, messages, locale) {
+				if (!substitutions) var substitutions = {};
+				if (!messages) var messages = this.translate.messages;
+				if (!locale) var locale = this.locale || "en";
+				if (!messages[key]) return "";
+				if (!messages[key]["en"]) return "";
+				/** @type {String} */
+				var text = messages[key][locale] ? messages[key][locale] : messages[key]["en"];
+				Object.entries(substitutions ? (typeof substitutions === "object" ? substitutions : {}) : {}).forEach(([key, value]) => {
+					text = text.replaceAll(`{{${key}}}`, value);
+				});
+				return text;
+			}.bind(this),
+			messages: require(this.utilPath.translate),
+		};
+	}
 }
 class Plugins extends Bettersignal {
 	constructor() {
@@ -385,7 +458,7 @@ class Plugins extends Bettersignal {
 	}
 	load(pluginPath, pluginName) {
 		try {
-			var plugin = new (require(pluginPath))();
+			var plugin = new (require(pluginPath)(BsApi))();
 			if (pluginName == plugin.name) {
 				plugin.path = pluginPath;
 				this.toast.new(
@@ -449,7 +522,7 @@ class Plugins extends Bettersignal {
 		);
 	}
 	delete(plugin) {
-		this.popup.confirm({
+		this.popups.confirm({
 			message: this.translate.get("confirmDeletePlugin"),
 			resolve: function () {
 				plugin.stop();
@@ -573,7 +646,7 @@ class Themes extends Bettersignal {
 		Bs.settings.save();
 	}
 	delete(theme) {
-		this.popup.confirm({
+		this.popups.confirm({
 			message: this.translate.get("confirmDeleteTheme"),
 			resolve: function () {
 				theme.stop();
@@ -596,17 +669,20 @@ class Theme {
 		if (!fs.existsSync(_path)) throw new Error("Load Theme: invalid path");
 		var data = fs.readFileSync(_path, { encoding: "utf8" });
 		var links = [];
-		let _links = data.match(/(?<=\* @links ).*(?<!\n)/gm);
+		let _links = data.match(/(?<=@links)(?:(((\n|\r\n)( |\*)*)(?:\[[a-z0-9]*\])(?:\(.*\))(?:\{[a-z0-9]*\})))+(?=(\n|\r\n).*@endLinks)/gim);
 		if (_links) {
-			data.match(/(?<=\* @links ).*(?<!\n)/gm)[0]
-				.split(";")
-				.forEach((element) => {
-					var link = element.split("=>");
-					if (link[1].trim().isURL()) {
-						links.push({
-							name: link[0].trim(),
-							src: new URL(link[1]).href,
-						});
+			_links[0]
+				.replace(/( )|(^\n)/gim, "")
+				.formatedMatch(/(\[[a-z0-9]*\])(\(.*\))(\{[a-z0-9]*\})/gim)
+				.forEach((match) => {
+					if (match.groups.length >= 2) {
+						if (match.groups[1].slice(1, match.groups[1].length - 1).isURL()) {
+							links.push({
+								title: match.groups[0].slice(1, match.groups[0].length - 1),
+								link: match.groups[1].slice(1, match.groups[1].length - 1),
+								type: match.groups[2] ? match.groups[2].slice(1, match.groups[2].length - 1) : null,
+							});
+						}
 					}
 				});
 		}
@@ -643,18 +719,8 @@ class Settings extends Bettersignal {
 			interface: {
 				language: {
 					type: "selector",
-					possibleValue: {
-						fr: {
-							fr: "Français",
-							en: "English",
-						},
-						en: {
-							fr: "Français",
-							en: "English",
-						},
-					},
 					onchange: function (e) {
-						this.popup.confirm({
+						this.popups.confirm({
 							message: Bs.translate.get("confirmRestart"),
 							resolve: function () {
 								this.props.language = e.target.value;
@@ -665,14 +731,11 @@ class Settings extends Bettersignal {
 							}.bind(this),
 						});
 					},
-					title: {
-						fr: "Langue",
-						en: "Language",
-					},
-					description: {
-						fr: "Permet de changer la langue de l'interface de BetterSignal, changer ce paramètre entraine un redémarrage de Signal.",
-						en: "Allow you to change BetterSignal interface language, change this setting will cause a application restart.",
-					},
+				},
+			},
+			toasts: {
+				loadedToasts: {
+					type: "boolean",
 				},
 			},
 		};
@@ -708,7 +771,7 @@ class Settings extends Bettersignal {
 										events: {
 											click: this.collapseCategory.bind(null, key),
 										},
-										children: [this.translate.get(key)],
+										children: [this.translate.get("settings_" + key)],
 									}),
 									E("div").set({
 										props: {
@@ -727,7 +790,7 @@ class Settings extends Bettersignal {
 															change: value1.onchange.bind(Bs.settings),
 														},
 														children: [
-															Object.entries(this.translateSettings(value1.possibleValue, Bs.settings.props.language)).map(([key2, value2]) => {
+															Object.entries(this.translate.get("settings_" + key1 + "_possibleValue", null, null, this.props.language)).map(([key2, value2]) => {
 																var props = {
 																	value: key2,
 																};
@@ -742,7 +805,13 @@ class Settings extends Bettersignal {
 														],
 													});
 												} else if (value1.type === "boolean") {
-													button = this.components.switch(Bs.settings.props[key1], value1.onchange.bind(Bs.settings));
+													button = this.components.inputs.switch({
+														defaultValue: this.props[key1],
+														callback: function (val) {
+															this.props[key1] = val;
+															value1.onchange ? value1.onchange(val) : null;
+														}.bind(this),
+													}).html;
 												}
 												return E("div").set({
 													props: {
@@ -754,13 +823,13 @@ class Settings extends Bettersignal {
 															props: {
 																class: "BsSettingsItemTitle",
 															},
-															children: [this.translateSettings(value1.title, Bs.settings.props.language)],
+															children: [this.translate.get(`settings_${key1}`)],
 														}),
 														E("span").set({
 															props: {
 																class: "BsSettingsItemDescription",
 															},
-															children: [this.translateSettings(value1.description, Bs.settings.props.language)],
+															children: [this.translate.get("settings_" + key1 + "_desc")],
 														}),
 													],
 												});
@@ -952,7 +1021,7 @@ class Settings extends Bettersignal {
 				}),
 			],
 		});
-		this.popup = this.popup.new(this.page, { size: "big" });
+		this.popup = this.popups.new(this.page, { size: "big" });
 		this.popup.open();
 	}
 	loadRightPanel(section) {
@@ -971,7 +1040,7 @@ class Settings extends Bettersignal {
 	}
 	save() {
 		return new Promise((resolve) => {
-			fs.writeFile(settingsPath, JSON.stringify(Bs.settings.props), { encoding: "utf8" }, () => {
+			jf.writeFile(this.utilPath.settings, this.props, { spaces: 2, EOL: "\r\n" }, function () {
 				resolve();
 			});
 		});
@@ -1048,14 +1117,14 @@ class Settings extends Bettersignal {
 										plugin.links.map((item) => {
 											return E("a").set({
 												props: {
-													title: item.name,
-													href: item.src,
+													title: item.title,
+													href: item.link,
 												},
 												children: [
 													E("img").set({
 														props: {
 															// TODO change
-															src: this.components.svgIcons["website"],
+															src: this.components.svgIcons[item.type] || this.components.svgIcons["website"],
 														},
 													}),
 												],
@@ -1180,14 +1249,14 @@ class Settings extends Bettersignal {
 										theme.links.map((item) => {
 											return E("a").set({
 												props: {
-													title: item.name,
-													href: item.src,
+													title: item.title,
+													href: item.link,
 												},
 												children: [
 													E("img").set({
 														props: {
 															// TODO change
-															src: this.components.svgIcons.website,
+															src: this.components.svgIcons[item.type] || this.components.svgIcons["website"],
 														},
 													}),
 												],
@@ -1315,8 +1384,9 @@ class Popup {
 		}
 	}
 }
-class ContextMenu {
+class ContextMenu extends Bettersignal {
 	constructor() {
+		super();
 		this.items = {
 			selection: [
 				{
@@ -1362,48 +1432,22 @@ class ContextMenu {
 			],
 			image: [
 				{
-					text: Bs.translate.get("saveAs"),
-					onclick: function (e) {
-						// var parent = e.closest(".module-message__attachment-container");
-						// if (parent) {
-						// 	var reactEventHandlers = parent[Object.keys(parent).find((_e) => _e.includes("__reactEventHandlers$"))];
-						// 	var attachment = Object.values(reactEventHandlers.children.props.attachments).find((_e) => _e.thumbnail.url.replaceAll("\\", "/") === imageUrl || _e.url.replaceAll("\\", "/").replaceAll("file:///", ""));
-						// 	if (!attachment) return false;
-						// 	var fileName = attachment.fileName;
-						// 	var ext = attachment.contentType.match(/(?!.*\/).*/gm)[0]
-						// 	var link = attachment.url
-						// } else {
-						// 	var reactEventHandlers = e[Object.keys(e).find((_e) => _e.includes("__reactEventHandlers$"))];
-						// 	var link = e.src.replaceAll("file:///", "").replaceAll("\\", "/");
-						// }
-						// var name = fileName ? fileName : `image-${new Date().format("YYYY-MM-DD_hh-mm-ss")}.${ext ? ext : "jpeg"}`;
-						// Bs.storage.saveDataToDisk({
-						// 	data: fs.readFileSync(link),
-						// 	name: name,
-						// }).then(({ fullPath }) => {
-						// 	Bs.toast.new(Bs.translate.get("savedAsAndOpenFolder"), {
-						// 		type: "success",
-						// 		icon: "ok",
-						// 		events: {
-						// 			click: Signal.Migrations.openFileInFolder.bind(null, fullPath),
-						// 		},
-						// 	});
-						// });
-						var path = Bs.path.parse(e.src).path;
-						// var shortThumbnailPath =
+					text: this.translate.get("saveAs"),
+					onclick: async function (/**@type {HTMLElement}*/ e) {
+						var img = e.querySelector("img");
 						var parent = e.closest(".module-timeline__message-container");
 						if (parent ? parent.id : false) {
-							var message = Bs.message.getFromElement(parent);
+							var message = await this.messages.getFromElement(parent);
 							var attachment = message.attributes.attachments.find((attachement) => {
-								Bs.path.normalize("" + attachement.thumbnail.src) === Bs.path.normalize(e.src);
+								return this.path.normalize(this.signal.attachmentFolder + "/" + attachement.thumbnail.path) === this.path.normalize(img ? img.src : e.src) || this.path.normalize(this.signal.attachmentFolder + "/" + attachement.path) === this.path.normalize(img ? img.src : e.src);
 							});
-							Bs.storage
-								.saveDataToDisk({
-									data: fs.readFileSync(attachment.src),
-									name: name,
+							this.storage
+								.saveData({
+									data: fs.readFileSync(this.signal.attachmentFolder + "/" + attachment.path),
+									name: attachment.fileName || `image-${new Date().format("YYYY-MM-DD_hh-mm-ss")}.${attachment.contentType.match(/(?!.*\/).*/gm)[0] || "jpeg"}`,
 								})
 								.then(({ fullPath }) => {
-									Bs.toast.new(Bs.translate.get("savedAsAndOpenFolder"), {
+									this.toast.new(this.translate.get("savedAsAndOpenFolder"), {
 										type: "success",
 										icon: "ok",
 										events: {
@@ -1411,32 +1455,35 @@ class ContextMenu {
 										},
 									});
 								});
+							return;
 						}
-					},
+						parent = e.closest(".module-lightbox");
+						if (parent) {
+							let btn = parent.querySelector(".iconButton.save");
+							if (btn) btn.click();
+						}
+					}.bind(this),
 				},
 				{
 					// TODO convertir
 					text: Bs.translate.get("copy"),
 					onclick: function (e) {
 						var img = e.querySelector("img");
-						if (!img) return false;
-						Bs.copyImage(img.src);
+						Bs.copyImage(img ? img.src : e.src);
 					},
 					submenu: [
 						{
 							text: Bs.translate.get("image"),
 							onclick: function (e) {
 								var img = e.querySelector("img");
-								if (!img) return false;
-								Bs.copyImage(img.src);
+								Bs.copyImage(img ? img.src : e.src);
 							},
 						},
 						{
 							text: Bs.translate.get("imageLink"),
 							onclick: function (e) {
 								var img = e.querySelector("img");
-								if (!img) return false;
-								Bs.copyText(img.src.replace("file:///", ""));
+								Bs.copyText(img ? img.src.replace("file:///", "") : e.src.replace("file:///", ""));
 								Bs.toast.new(Bs.translate.get("copied"));
 							},
 						},
@@ -1540,10 +1587,11 @@ class ContextMenu {
 			},
 		}; // TODO Ajouter icon
 		this.query = {
-			// ".module-message__attachment-container .module-image": "image",
+			".module-message__attachment-container .module-image": "image",
+			".module-lightbox[role=presentation] img": "image",
 			// ".module-message__sticker-container .module-image": "sticker",
 			a: "link",
-			img: "image",
+			// img: "image",
 			// ".module-avatar img": "avatar",
 		};
 		this.ref = null;
@@ -1607,9 +1655,11 @@ class ContextMenu {
 		if (Boolean(window.getSelection().toString())) {
 			this.menu = this.render("selection");
 		} else {
+			var used = [];
 			Object.entries(this.query).forEach(([key, value]) => {
 				let element = e.target.closest(key);
-				if (element && this.items[value]) {
+				if (element && this.items[value] && !used.includes(value)) {
+					used.push(value);
 					this.target = element;
 					if (!this.menu) this.menu = [];
 					else this.menu.push(this.renderItem(this.items.divider));
@@ -1697,12 +1747,27 @@ Date.prototype.format = function (format) {
 		.replaceAll("mm", (this.getMinutes().toString().length == 1 ? "0" : "") + this.getMinutes())
 		.replaceAll("hh", (this.getHours().toString().length == 1 ? "0" : "") + this.getHours());
 };
+String.prototype.formatedMatch = function (regex) {
+	if (!(regex instanceof RegExp)) return false;
+	const str = this;
+	var r = [];
+	let m;
+	while ((m = regex.exec(str)) !== null) {
+		if (m.index === regex.lastIndex) {
+			regex.lastIndex++;
+		}
+		var match = m[0];
+		m.shift();
+		r.push({ match: match, groups: [...m] });
+	}
+	return r;
+};
 
 window.onload = function () {
 	Bs = new Bettersignal();
 	Bs.settings = new Settings();
 	Bs.contextMenu = new ContextMenu();
-	BsApi(Bs, {
+	BsApi = BsApi(Bs, {
 		E,
 	});
 	Bs.wait.elementOnce(".index").then(function () {

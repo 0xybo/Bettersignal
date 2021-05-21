@@ -10,7 +10,7 @@ const fs = require("fs");
 const { Bettersignal } = require("./index")
 
 module.exports = function (/** @type {Bettersignal} */Bs, { E }) {
-	window.BsApi = {
+	return {
 		translate: {
 			locale: Bs.settings.props.language,
 			get: Bs.translate.get,

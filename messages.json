@@ -1,51 +1,27 @@
 {
-	"settingsButton": {
-		"fr": "Préférences BetterSignal",
-		"en": "Bettersignal settings"
+	"confirmDeletePlugin": {
+		"fr": "Voulez-vous vraiment supprimer ce plugin ?",
+		"en": "Do you really want to delete this plugin ?"
 	},
-	"settings": {
-		"fr": "Paramètres",
-		"en": "Settings"
+	"confirmDeleteTheme": {
+		"fr": "Voulez-vous vraiment supprimer ce thème ?",
+		"en": "Do you really want to delete this theme ?"
 	},
-	"plugins": {
-		"fr": "Plugins",
-		"en": "Plugins"
+	"confirmRestart": {
+		"fr": "Voulez-vous vraiment redémarrer Signal",
+		"en": "Would you realy restart application."
 	},
-	"plugin": {
-		"fr": "Plugin",
-		"en": "Plugin"
+	"copied": {
+		"fr": "Copié",
+		"en": "Copied"
 	},
-	"themes": {
-		"fr": "Thèmes",
-		"en": "Themes"
+	"copy": {
+		"fr": "Copier",
+		"en": "Copy"
 	},
-	"theme": {
-		"fr": "Thème",
-		"en": "Theme"
-	},
-	"openPluginsFolder": {
-		"fr": "Ouvrir le dossier des plugins",
-		"en": "Open Plugins Folder"
-	},
-	"openThemesFolder": {
-		"fr": "Ouvrir le dossier des thèmes",
-		"en": "Open Themes Folder"
-	},
-	"searchPlugins": {
-		"fr": "Rechercher des plugins ...",
-		"en": "Search plugins ..."
-	},
-	"searchThemes": {
-		"fr": "Rechercher des thèmes ...",
-		"en": "Search themes ..."
-	},
-	"general": {
-		"fr": "Général",
-		"en": "General"
-	},
-	"versionAndAuthor": {
-		"fr": "v{{version}} par {{author}}",
-		"en": "v{{version}} by {{author}}"
+	"copyLink": {
+		"fr": "Copier le lien",
+		"en": "Copy link"
 	},
 	"delete": {
 		"fr": "Supprimer",
@@ -55,33 +31,49 @@
 		"fr": "Quitter",
 		"en": "Exit"
 	},
-	"themeLoadedToast": {
-		"fr": "Le thème '{{name}}' a été chargé",
-		"en": "Theme '{{name}}' loaded"
+	"general": {
+		"fr": "Général",
+		"en": "General"
 	},
-	"confirmDeleteTheme": {
-		"fr": "Voulez-vous vraiment supprimer ce thème ?",
-		"en": "Do you really want to delete this theme ?"
+	"image": {
+		"fr": "Image",
+		"en": "Image"
 	},
-	"themeDeletedToast": {
+	"imageCopied": {
+		"fr": "Image copié",
+		"en": "Image copied"
+	},
+	"imageLink": {
+		"fr": "Lien de l'image",
+		"en": "Image link"
+	},
+	"interface": {
+		"fr": "Interface",
+		"en": "Interface"
+	},
+	"open": {
+		"fr": "Ouvrir",
+		"en": "Open"
+	},
+	"openPluginsFolder": {
+		"fr": "Ouvrir le dossier des plugins",
+		"en": "Open Plugins Folder"
+	},
+	"openThemesFolder": {
+		"fr": "Ouvrir le dossier des thèmes",
+		"en": "Open Themes Folder"
+	},
+	"plugin": {
+		"fr": "Plugin",
+		"en": "Plugin"
+	},
+	"pluginDeletedToast": {
 		"fr": "Le plugin '{{name}}' a été supprimé",
 		"en": "Plugin '{{name}}' was deleted"
-	},
-	"themeStopedToast": {
-		"fr": "Le thème '{{name}}' s'est arrété",
-		"en": "Theme '{{name}}' stoped"
-	},
-	"themeStartedToast": {
-		"fr": "Le thème '{{name}}' a démarré",
-		"en": "Theme '{{name}}' started"
 	},
 	"pluginLoadedToast": {
 		"fr": "Le plugin '{{name}}' a été chargé",
 		"en": "Plugin '{{name}}' loaded"
-	},
-	"pluginUnloadedToast": {
-		"fr": "Le thème '{{name}}' a été déchargé",
-		"en": "Theme '{{name}}' unloaded"
 	},
 	"pluginStartedToast": {
 		"fr": "Le plugin '{{name}}' a démarré",
@@ -91,25 +83,13 @@
 		"fr": "Le plugin '{{name}}' s'est arrété",
 		"en": "Plugin '{{name}}' stopted"
 	},
-	"confirmDeletePlugin": {
-		"fr": "Voulez-vous vraiment supprimer ce plugin ?",
-		"en": "Do you really want to delete this plugin ?"
+	"pluginUnloadedToast": {
+		"fr": "Le thème '{{name}}' a été déchargé",
+		"en": "Theme '{{name}}' unloaded"
 	},
-	"pluginDeletedToast": {
-		"fr": "Le plugin '{{name}}' a été supprimé",
-		"en": "Plugin '{{name}}' was deleted"
-	},
-	"copy": {
-		"fr": "Copier",
-		"en": "Copy"
-	},
-	"copied": {
-		"fr": "Copié",
-		"en": "Copied"
-	},
-	"searchOn": {
-		"fr": "Rechercher sur...",
-		"en": "Search on..."
+	"plugins": {
+		"fr": "Plugins",
+		"en": "Plugins"
 	},
 	"saveAs": {
 		"fr": "Sauvegarder sous...",
@@ -119,32 +99,94 @@
 		"fr": "Fichier sauvegardé ! Cliquer ici pour ouvrir le dossier.",
 		"en": "File saved ! Click here to open folder."
 	},
-	"image": {
-		"fr": "Image",
-		"en": "Image"
+	"searchOn": {
+		"fr": "Rechercher sur...",
+		"en": "Search on..."
 	},
-	"imageLink": {
-		"fr": "Lien de l'image",
-		"en": "Image link"
+	"searchPlugins": {
+		"fr": "Rechercher des plugins ...",
+		"en": "Search plugins ..."
 	},
-	"confirmRestart": {
-		"fr": "Voulez-vous vraiment redémarrer Signal",
-		"en": "Would you realy restart application."
+	"searchThemes": {
+		"fr": "Rechercher des thèmes ...",
+		"en": "Search themes ..."
 	},
-	"interface": {
-		"fr": "Interface",
+	"settings": {
+		"fr": "Paramètres",
+		"en": "Settings"
+	},
+	"settingsButton": {
+		"fr": "Préférences BetterSignal",
+		"en": "Bettersignal settings"
+	},
+	"settings_language": {
+		"fr": "Langage de Bettersignal",
+		"en": "Bettersignal language"
+	},
+	"settings_language_desc": {
+		"fr": "Langue de l'interface Bettersignal. ⚠ Changer ce paramètre entraine un redémarrage de Signal.",
+		"en": "Bettersignal interface language. ⚠ Change this setting will cause a Signal restart."
+	},
+	"settings_language_possibleValue": {
+		"fr": {
+			"fr": "Français",
+			"en": "English"
+		},
+		"en": {
+			"fr": "Français",
+			"en": "English"
+		}
+	},
+	"settings_loadedToasts": {
+		"fr": "Notifications de fin chargement des plugins et thèmes",
+		"en": "Plugin and theme loaded notifications"
+	},
+	"settings_loadedToasts_desc": {
+		"fr": "Affiche une notification lorsqu'un plugin ou un thème a fini d'être chargé.",
+		"en": "Displays a toast when a plugin or theme has loaded."
+	},
+  "settings_interface": {
+    "fr": "Interface",
 		"en": "Interface"
+  },
+  "settings_toasts": {
+    "fr": "Notifications",
+		"en": "Toasts"
+  },
+	"theme": {
+		"fr": "Thème",
+		"en": "Theme"
 	},
-	"imageCopied": {
-		"fr": "Image copié",
-		"en": "Image copied"
+	"themeDeletedToast": {
+		"fr": "Le plugin '{{name}}' a été supprimé",
+		"en": "Plugin '{{name}}' was deleted"
 	},
-	"copyLink": {
-		"fr": "Copier le lien",
-		"en": "Copy link"
+	"themeLoadedToast": {
+		"fr": "Le thème '{{name}}' a été chargé",
+		"en": "Theme '{{name}}' loaded"
 	},
-	"open": {
-		"fr": "Ouvrir",
-		"en": "Open"
+	"themeStartedToast": {
+		"fr": "Le thème '{{name}}' a démarré",
+		"en": "Theme '{{name}}' started"
+	},
+	"themeStopedToast": {
+		"fr": "Le thème '{{name}}' s'est arrété",
+		"en": "Theme '{{name}}' stoped"
+	},
+	"themes": {
+		"fr": "Thèmes",
+		"en": "Themes"
+	},
+	"toast": {
+		"fr": "Notification",
+		"en": "Toast"
+	},
+	"toasts": {
+		"fr": "Notifications",
+		"en": "Toasts"
+	},
+	"versionAndAuthor": {
+		"fr": "v{{version}} par {{author}}",
+		"en": "v{{version}} by {{author}}"
 	}
 }

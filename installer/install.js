@@ -23,9 +23,9 @@ console.log("Copying files to appdata ...")
 fs.copySync(appdataFilesPath, bettersignalPath)
 console.log("Copying done")
 
-// console.log("Extracting app ...");
-// asar.extractAll(asarPath, appPath);
-// console.log("Extracting done");
+console.log("Extracting app ...");
+asar.extractAll(asarPath, appPath);
+console.log("Extracting done");
 
 console.log("Reading file background.html ...");
 let backgroundData = fs.readFileSync(backgroundPath, { encoding: "utf-8" });

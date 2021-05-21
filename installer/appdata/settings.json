@@ -3,5 +3,7 @@
     ],
     "enabledThemes": [
     ],
-    "language": "en"
+    "language": "en",
+    "loadedToasts": true,
+    "startedToasts": true
 }

@@ -551,3 +551,7 @@ BsToasts {
     margin-right: 2px;
     margin-left: 2px;
 }
+
+.module-modal-host__overlay {
+	z-index: 300!important;
+}
